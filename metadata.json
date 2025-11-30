@@ -1,0 +1,7 @@
+{
+  "name": "SketchBot: 3D Digital Avatar",
+  "description": "A dual-mode (voice + text) interactive digital human in a cute sketch style using Gemini API.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
