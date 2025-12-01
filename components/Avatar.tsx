@@ -1,14 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Emotion, MouthShape } from '../types';
 import { useMousePosition } from '../hooks/useMousePosition';
 
-interface AvatarProps {
-  emotion: Emotion;
-  isSpeaking: boolean;
-}
-
-const Avatar: React.FC<AvatarProps> = ({ emotion, isSpeaking }) => {
-  const [mouthShape, setMouthShape] = useState<MouthShape>('closed');
+const Avatar = ({ emotion, isSpeaking }) => {
+  const [mouthShape, setMouthShape] = useState('closed');
   const { x, y } = useMousePosition();
   const [offsets, setOffsets] = useState({ x: 0, y: 0 });
 
@@ -31,12 +25,12 @@ const Avatar: React.FC<AvatarProps> = ({ emotion, isSpeaking }) => {
 
   // Lip sync simulation effect
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
+    let interval;
 
     if (isSpeaking) {
       // While speaking, cycle randomly through vowel shapes to simulate talking
       interval = setInterval(() => {
-        const shapes: MouthShape[] = ['a', 'o', 'e', 'i', 'u', 'v', 'closed'];
+        const shapes = ['a', 'o', 'e', 'i', 'u', 'v', 'closed'];
         const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
         setMouthShape(randomShape);
       }, 120); // 120ms update rate roughly matches syllable speed
@@ -50,7 +44,7 @@ const Avatar: React.FC<AvatarProps> = ({ emotion, isSpeaking }) => {
   // -- SVG Path Generators based on State --
 
   // 1. Mouth Paths
-  const getMouthPath = (shape: MouthShape, emo: Emotion) => {
+  const getMouthPath = (shape, emo) => {
     // If neutral/silent, shape depends on emotion
     if (shape === 'closed' && !isSpeaking) {
         switch (emo) {
@@ -77,167 +71,173 @@ const Avatar: React.FC<AvatarProps> = ({ emotion, isSpeaking }) => {
   };
 
   // 2. Eye Paths (Left and Right)
-  const getEyes = (emo: Emotion) => {
+  const getEyes = (emo) => {
     // Base positions: Left(70, 90), Right(130, 90)
     switch (emo) {
         case 'happy': // Arcs ^^
-            return (
-                <>
-                    <path d="M60,95 Q70,85 80,95" stroke="black" strokeWidth="3" fill="none" strokeLinecap="round" />
-                    <path d="M120,95 Q130,85 140,95" stroke="black" strokeWidth="3" fill="none" strokeLinecap="round" />
-                </>
+            return React.createElement(
+                React.Fragment,
+                null,
+                React.createElement("path", { d: "M60,95 Q70,85 80,95", stroke: "black", strokeWidth: "3", fill: "none", strokeLinecap: "round" }),
+                React.createElement("path", { d: "M120,95 Q130,85 140,95", stroke: "black", strokeWidth: "3", fill: "none", strokeLinecap: "round" })
             );
         case 'sad': // Arcs down
         case 'helpless':
-            return (
-                <>
-                     <circle cx="70" cy="95" r="4" fill="black" />
-                     <circle cx="130" cy="95" r="4" fill="black" />
-                </>
+            return React.createElement(
+                React.Fragment,
+                null,
+                React.createElement("circle", { cx: "70", cy: "95", r: "4", fill: "black" }),
+                React.createElement("circle", { cx: "130", cy: "95", r: "4", fill: "black" })
             );
         case 'surprised': // Wide circles with gleam
-            return (
-                <>
-                    <circle cx="70" cy="90" r="8" fill="none" stroke="black" strokeWidth="2" />
-                    <circle cx="130" cy="90" r="8" fill="none" stroke="black" strokeWidth="2" />
-                    <circle cx="70" cy="90" r="3" fill="black" />
-                    <circle cx="130" cy="90" r="3" fill="black" />
-                    <circle cx="72" cy="88" r="1.5" fill="white" />
-                    <circle cx="132" cy="88" r="1.5" fill="white" />
-                </>
+            return React.createElement(
+                React.Fragment,
+                null,
+                React.createElement("circle", { cx: "70", cy: "90", r: "8", fill: "none", stroke: "black", strokeWidth: "2" }),
+                React.createElement("circle", { cx: "130", cy: "90", r: "8", fill: "none", stroke: "black", strokeWidth: "2" }),
+                React.createElement("circle", { cx: "70", cy: "90", r: "3", fill: "black" }),
+                React.createElement("circle", { cx: "130", cy: "90", r: "3", fill: "black" }),
+                React.createElement("circle", { cx: "72", cy: "88", r: "1.5", fill: "white" }),
+                React.createElement("circle", { cx: "132", cy: "88", r: "1.5", fill: "white" })
             );
         case 'angry': // eyes slightly squinted
-            return (
-                <>
-                    <path d="M60,90 L80,90" stroke="black" strokeWidth="3" fill="none" />
-                    <path d="M120,90 L140,90" stroke="black" strokeWidth="3" fill="none" />
-                </>
+            return React.createElement(
+                React.Fragment,
+                null,
+                React.createElement("path", { d: "M60,90 L80,90", stroke: "black", strokeWidth: "3", fill: "none" }),
+                React.createElement("path", { d: "M120,90 L140,90", stroke: "black", strokeWidth: "3", fill: "none" })
             );
         case 'shy': 
         case 'neutral':
         default: // Default eyes with gleam
-            return (
-                <>
-                    <circle cx="70" cy="90" r="6" fill="black" />
-                    <circle cx="130" cy="90" r="6" fill="black" />
-                    <circle cx="72" cy="88" r="1.5" fill="white" />
-                    <circle cx="132" cy="88" r="1.5" fill="white" />
-                </>
+            return React.createElement(
+                React.Fragment,
+                null,
+                React.createElement("circle", { cx: "70", cy: "90", r: "6", fill: "black" }),
+                React.createElement("circle", { cx: "130", cy: "90", r: "6", fill: "black" }),
+                React.createElement("circle", { cx: "72", cy: "88", r: "1.5", fill: "white" }),
+                React.createElement("circle", { cx: "132", cy: "88", r: "1.5", fill: "white" })
             );
     }
   };
 
   // 3. Eyebrow Paths
-  const getEyebrows = (emo: Emotion) => {
+  const getEyebrows = (emo) => {
       switch(emo) {
           case 'angry': 
-            return (
-                <>
-                    <path d="M55,75 L85,85" stroke="black" strokeWidth="3" strokeLinecap="round" />
-                    <path d="M145,75 L115,85" stroke="black" strokeWidth="3" strokeLinecap="round" />
-                </>
+            return React.createElement(
+                React.Fragment,
+                null,
+                React.createElement("path", { d: "M55,75 L85,85", stroke: "black", strokeWidth: "3", strokeLinecap: "round" }),
+                React.createElement("path", { d: "M145,75 L115,85", stroke: "black", strokeWidth: "3", strokeLinecap: "round" })
             );
           case 'sad':
           case 'helpless':
-            return (
-                <>
-                    <path d="M55,80 L85,75" stroke="black" strokeWidth="3" strokeLinecap="round" />
-                    <path d="M145,80 L115,75" stroke="black" strokeWidth="3" strokeLinecap="round" />
-                </>
+            return React.createElement(
+                React.Fragment,
+                null,
+                React.createElement("path", { d: "M55,80 L85,75", stroke: "black", strokeWidth: "3", strokeLinecap: "round" }),
+                React.createElement("path", { d: "M145,80 L115,75", stroke: "black", strokeWidth: "3", strokeLinecap: "round" })
             );
           case 'surprised':
-             return (
-                <>
-                    <path d="M60,70 Q70,60 80,70" stroke="black" strokeWidth="3" strokeLinecap="round" />
-                    <path d="M120,70 Q130,60 140,70" stroke="black" strokeWidth="3" strokeLinecap="round" />
-                </>
+             return React.createElement(
+                React.Fragment,
+                null,
+                React.createElement("path", { d: "M60,70 Q70,60 80,70", stroke: "black", strokeWidth: "3", strokeLinecap: "round" }),
+                React.createElement("path", { d: "M120,70 Q130,60 140,70", stroke: "black", strokeWidth: "3", strokeLinecap: "round" })
             );
           case 'confused':
-             return (
-                <>
-                    <path d="M60,75 L80,75" stroke="black" strokeWidth="3" strokeLinecap="round" />
-                    <path d="M120,70 Q130,60 140,70" stroke="black" strokeWidth="3" strokeLinecap="round" />
-                </>
+             return React.createElement(
+                React.Fragment,
+                null,
+                React.createElement("path", { d: "M60,75 L80,75", stroke: "black", strokeWidth: "3", strokeLinecap: "round" }),
+                React.createElement("path", { d: "M120,70 Q130,60 140,70", stroke: "black", strokeWidth: "3", strokeLinecap: "round" })
             );
           default: // Neutral/Happy slightly arched
-             return (
-                <>
-                    <path d="M60,75 Q70,72 80,75" stroke="black" strokeWidth="3" strokeLinecap="round" />
-                    <path d="M120,75 Q130,72 140,75" stroke="black" strokeWidth="3" strokeLinecap="round" />
-                </>
+             return React.createElement(
+                React.Fragment,
+                null,
+                React.createElement("path", { d: "M60,75 Q70,72 80,75", stroke: "black", strokeWidth: "3", strokeLinecap: "round" }),
+                React.createElement("path", { d: "M120,75 Q130,72 140,75", stroke: "black", strokeWidth: "3", strokeLinecap: "round" })
             );
       }
   }
 
   // 4. Blush (for Shy/Happy)
-  const getBlush = (emo: Emotion) => {
+  const getBlush = (emo) => {
       if (emo === 'shy' || emo === 'happy' || emo === 'excited') {
-          return (
-              <>
-                <ellipse cx="55" cy="110" rx="10" ry="5" fill="#FFB7B2" opacity="0.6" />
-                <ellipse cx="145" cy="110" rx="10" ry="5" fill="#FFB7B2" opacity="0.6" />
-              </>
-          )
+          return React.createElement(
+              React.Fragment,
+              null,
+              React.createElement("ellipse", { cx: "55", cy: "110", rx: "10", ry: "5", fill: "#FFB7B2", opacity: "0.6" }),
+              React.createElement("ellipse", { cx: "145", cy: "110", rx: "10", ry: "5", fill: "#FFB7B2", opacity: "0.6" })
+          );
       }
       return null;
   }
   
-  return (
-    <div className="w-full h-full flex items-center justify-center">
-      <svg 
-        viewBox="0 0 200 240" 
-        className="w-full h-full max-h-[500px]"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* Background Aura */}
-        <circle cx="100" cy="100" r="90" fill="#FDFD96" opacity="0.3" />
+  return React.createElement(
+    "div",
+    { className: "w-full h-full flex items-center justify-center" },
+    React.createElement(
+      "svg",
+      {
+        viewBox: "0 0 200 240",
+        className: "w-full h-full max-h-[500px]",
+        xmlns: "http://www.w3.org/2000/svg"
+      },
+      /* Background Aura */
+      React.createElement("circle", { cx: "100", cy: "100", r: "90", fill: "#FDFD96", opacity: "0.3" }),
 
-        {/* Body - T-shirt shape with breathing animation */}
-        <g className="animate-breathe">
-            <path 
-                d="M70,175 C 60,185 50,210 70,240 L 130,240 C 150,210 140,185 130,175 Z" 
-                fill="#A7C7E7" 
-                stroke="black" 
-                strokeWidth="4" 
-                strokeLinejoin="round"
-            />
-            {/* Collar */}
-            <path d="M90,180 Q100,187 110,180" fill="none" stroke="black" strokeWidth="3" strokeLinecap="round"/>
-        </g>
+      /* Body - T-shirt shape with breathing animation */
+      React.createElement(
+        "g",
+        { className: "animate-breathe" },
+        React.createElement("path", {
+          d: "M70,175 C 60,185 50,210 70,240 L 130,240 C 150,210 140,185 130,175 Z",
+          fill: "#A7C7E7",
+          stroke: "black",
+          strokeWidth: "4",
+          strokeLinejoin: "round"
+        }),
+        /* Collar */
+        React.createElement("path", { d: "M90,180 Q100,187 110,180", fill: "none", stroke: "black", strokeWidth: "3", strokeLinecap: "round" })
+      ),
+      
+      /* Shadow under head for depth */
+      React.createElement("ellipse", { cx: "100", cy: "180", rx: "45", ry: "10", fill: "#2d2d2d", opacity: "0.1" }),
+      
+      /* Head */
+      React.createElement("circle", {
+        cx: "100",
+        cy: "100",
+        r: "80",
+        fill: "white",
+        stroke: "black",
+        strokeWidth: "4"
+      }),
         
-        {/* Shadow under head for depth */}
-        <ellipse cx="100" cy="180" rx="45" ry="10" fill="#2d2d2d" opacity="0.1" />
-        
-        {/* Head */}
-        <circle 
-            cx="100" 
-            cy="100" 
-            r="80" 
-            fill="white" 
-            stroke="black" 
-            strokeWidth="4" 
-        />
-          
-        {/* Parallax Group: Contains all facial features */}
-        <g transform={`translate(${offsets.x}, ${offsets.y})`}>
-          {/* Facial features */}
-          {getEyebrows(emotion)}
-          {getEyes(emotion)}
-          {getBlush(emotion)}
+      /* Parallax Group: Contains all facial features */
+      React.createElement(
+        "g",
+        { transform: `translate(${offsets.x}, ${offsets.y})` },
+        /* Facial features */
+        getEyebrows(emotion),
+        getEyes(emotion),
+        getBlush(emotion),
 
-          {/* Mouth */}
-          <path 
-              d={getMouthPath(mouthShape, emotion)} 
-              fill={mouthShape === 'closed' ? 'none' : '#FFB7B2'} 
-              stroke="black" 
-              strokeWidth="3" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-          />
-        </g>
-        
-      </svg>
-    </div>
+        /* Mouth */
+        React.createElement("path", {
+          d: getMouthPath(mouthShape, emotion),
+          fill: mouthShape === 'closed' ? 'none' : '#FFB7B2',
+          stroke: "black",
+          strokeWidth: "3",
+          strokeLinecap: "round",
+          strokeLinejoin: "round"
+        })
+      )
+      
+    )
   );
 };
 

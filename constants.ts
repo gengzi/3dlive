@@ -1,5 +1,3 @@
-import { Emotion } from './types';
-
 export const SYSTEM_INSTRUCTION = `
 You are a cute, sketch-style digital human assistant. 
 Your personality is friendly, Q-version, and helpful. 
@@ -21,4 +19,5 @@ Rules:
 4. Default to 'neutral' if unsure.
 `;
 
-export const INITIAL_EMOTION: Emotion = 'neutral';
+export const INITIAL_EMOTION = 'neutral';
+export const DEFAULT_LANGUAGE = 'zh';

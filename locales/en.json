@@ -1,0 +1,9 @@
+{
+  "welcome_message": "Hello! I'm SketchBot. We can chat by text or voice!",
+  "listening": "Listening...",
+  "type_a_message": "Type a message...",
+  "toggle_voice_input": "Toggle Voice Input",
+  "speaking": "Speaking...",
+  "english": "English",
+  "chinese": "中文"
+}

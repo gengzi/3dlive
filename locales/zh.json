@@ -1,0 +1,9 @@
+{
+  "welcome_message": "你好！我是 SketchBot。我们可以通过文字或语音聊天！",
+  "listening": "正在聆听...",
+  "type_a_message": "输入消息...",
+  "toggle_voice_input": "切换语音输入",
+  "speaking": "正在讲话...",
+  "english": "English",
+  "chinese": "中文"
+}

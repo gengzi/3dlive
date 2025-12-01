@@ -1,31 +1,31 @@
-import { GoogleGenAI } from "@google/genai";
-import { GeminiResponse } from "../types";
+import { GoogleGenAI, Type } from "@google/genai";
 import { SYSTEM_INSTRUCTION } from "../constants";
 
-const apiKey = process.env.API_KEY;
-// Safe initialization check
-if (!apiKey) {
-  console.error("Gemini API Key is missing!");
-}
+// Initialize the SDK directly with process.env.API_KEY
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const ai = new GoogleGenAI({ apiKey: apiKey || '' });
-
-export const sendMessageToGemini = async (message: string): Promise<GeminiResponse> => {
-  if (!apiKey) {
-    return {
-      reply: "Please set your API Key in the environment.",
-      emotion: "sad"
-    };
-  }
-
+export const sendMessageToGemini = async (message, currentLang) => {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: message,
       config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
+        // Dynamically add language instruction to the system instruction
+        systemInstruction: `${SYSTEM_INSTRUCTION}\nAlways reply in ${currentLang === 'zh' ? 'Chinese' : 'English'}.`,
         responseMimeType: "application/json", 
-        // We ask for JSON directly to ensure emotion parsing
+        // Enforce JSON output structure.
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            reply: {
+              type: Type.STRING,
+            },
+            emotion: {
+              type: Type.STRING,
+            },
+          },
+          required: ["reply", "emotion"],
+        },
       }
     });
 
@@ -35,13 +35,13 @@ export const sendMessageToGemini = async (message: string): Promise<GeminiRespon
     }
 
     // Parse the JSON response
-    const data = JSON.parse(text) as GeminiResponse;
+    const data = JSON.parse(text);
     return data;
 
   } catch (error) {
     console.error("Gemini API Error:", error);
     return {
-      reply: "Oops, I had a little brain freeze. Can you say that again?",
+      reply: "Oops, I had a little brain freeze. Can you say that again?", // This message is intentionally not translated here, as it's an API error.
       emotion: "confused"
     };
   }

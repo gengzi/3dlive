@@ -1,92 +1,62 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 
-// --- Type Definitions for Web Speech API ---
-
-interface SpeechRecognitionEvent {
-  results: {
-    [index: number]: {
-      [index: number]: {
-        transcript: string;
-      };
-    };
-  };
-}
-
-interface SpeechRecognitionErrorEvent {
-  error: any;
-}
-
-interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-  onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
-  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognition;
-    webkitSpeechRecognition: new () => SpeechRecognition;
-  }
-}
-
-// ------------------------------------------
-
-interface UseSpeechResult {
-  isListening: boolean;
-  isSpeaking: boolean;
-  transcript: string;
-  startListening: () => void;
-  stopListening: () => void;
-  speak: (text: string) => void;
-  cancelSpeech: () => void;
-  setTranscript: (text: string) => void;
-  hasRecognitionSupport: boolean;
-}
-
-export const useSpeech = (): UseSpeechResult => {
+export const useSpeech = ({ language }) => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [hasRecognitionSupport, setHasRecognitionSupport] = useState(false);
 
   // Refs to hold instances
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const synthRef = useRef<SpeechSynthesis>(window.speechSynthesis);
+  const recognitionRef = useRef(null);
+  const synthRef = useRef(window.speechSynthesis);
+
+  // Map our language codes to Web Speech API lang codes
+  const getSpeechLangCode = (lang) => {
+    switch (lang) {
+      case 'zh': return 'zh-CN';
+      case 'en': return 'en-US';
+      default: return 'zh-CN';
+    }
+  };
 
   useEffect(() => {
-    // Check for browser support
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    // FIX: Add type assertion for browser-specific SpeechRecognition API
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     
     if (SpeechRecognition) {
       setHasRecognitionSupport(true);
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = false;
-      recognition.lang = 'zh-CN'; // Default to Chinese as per prompt context cues ("a, o, e" sounds)
+      recognition.lang = getSpeechLangCode(language); // Set language dynamically
 
       recognition.onstart = () => setIsListening(true);
       recognition.onend = () => setIsListening(false);
       
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
+      recognition.onresult = (event) => {
         const text = event.results[0][0].transcript;
         setTranscript(text);
       };
 
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      recognition.onerror = (event) => {
         console.error("Speech recognition error", event.error);
         setIsListening(false);
       };
 
       recognitionRef.current = recognition;
+    } else {
+      setHasRecognitionSupport(false);
+      console.warn("Speech Recognition API not supported in this browser.");
     }
-  }, []);
+
+    // Cleanup existing recognition instance if language changes
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+        recognitionRef.current = null;
+      }
+    };
+  }, [language]); // Re-initialize recognition when language changes
 
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening) {
@@ -105,14 +75,14 @@ export const useSpeech = (): UseSpeechResult => {
     }
   }, [isListening]);
 
-  const speak = useCallback((text: string) => {
+  const speak = useCallback((text) => {
     if (!synthRef.current) return;
 
     // Cancel current speech
     synthRef.current.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'zh-CN';
+    utterance.lang = getSpeechLangCode(language); // Set language dynamically
     utterance.rate = 1.1; // Slightly faster for a "cute" feel
     utterance.pitch = 1.2; // Slightly higher pitch
 
@@ -121,7 +91,7 @@ export const useSpeech = (): UseSpeechResult => {
     utterance.onerror = () => setIsSpeaking(false);
 
     synthRef.current.speak(utterance);
-  }, []);
+  }, [language]); // Re-create speak function if language changes
 
   const cancelSpeech = useCallback(() => {
     if (synthRef.current) {

@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { LanguageProvider } from './i18n.tsx'; // Import LanguageProvider
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -9,7 +10,13 @@ if (!rootElement) {
 
 const root = ReactDOM.createRoot(rootElement);
 root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+  React.createElement(
+    React.StrictMode,
+    null,
+    React.createElement(
+      LanguageProvider,
+      null,
+      React.createElement(App, null)
+    )
+  )
 );
