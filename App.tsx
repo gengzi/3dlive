@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Avatar from './components/Avatar';
+import SketchAvatar from './components/SketchAvatar';
 import ChatInterface from './components/ChatInterface';
 import { useSpeech } from './hooks/useSpeech';
 import { sendMessageToGemini } from './services/geminiService';
@@ -131,7 +131,7 @@ const AppContent = () => {
             { className: "absolute -top-10 left-0 bg-pastel-pink border-2 border-black px-3 py-1 rounded-full animate-pulse shadow-[2px_2px_0px_black]" },
             React.createElement("span", { className: "text-xs font-bold" }, t("listening"))
           ),
-        React.createElement(Avatar, { emotion: currentEmotion, isSpeaking: isSpeaking })
+        React.createElement(SketchAvatar, { emotion: currentEmotion, isSpeaking: isSpeaking })
       )
     ),
 
