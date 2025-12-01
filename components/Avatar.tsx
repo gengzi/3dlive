@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Emotion, MouthShape } from '../types';
+import { useMousePosition } from '../hooks/useMousePosition';
 
 interface AvatarProps {
   emotion: Emotion;
@@ -8,6 +9,25 @@ interface AvatarProps {
 
 const Avatar: React.FC<AvatarProps> = ({ emotion, isSpeaking }) => {
   const [mouthShape, setMouthShape] = useState<MouthShape>('closed');
+  const { x, y } = useMousePosition();
+  const [offsets, setOffsets] = useState({ x: 0, y: 0 });
+
+  // Parallax effect for head turning
+  useEffect(() => {
+    const screenCenterX = window.innerWidth / 2;
+    const screenCenterY = window.innerHeight / 2;
+    
+    // Max pixels the features can move
+    const maxOffset = 8;
+    
+    // Calculate displacement based on mouse position relative to the center of the screen
+    const offsetX = Math.max(-maxOffset, Math.min(maxOffset, (x - screenCenterX) / 60));
+    const offsetY = Math.max(-maxOffset, Math.min(maxOffset, (y - screenCenterY) / 60));
+    
+    // Move features in the opposite direction of the mouse for a natural "looking" effect
+    setOffsets({ x: -offsetX, y: -offsetY });
+
+  }, [x, y]);
 
   // Lip sync simulation effect
   useEffect(() => {
@@ -73,33 +93,35 @@ const Avatar: React.FC<AvatarProps> = ({ emotion, isSpeaking }) => {
                 <>
                      <circle cx="70" cy="95" r="4" fill="black" />
                      <circle cx="130" cy="95" r="4" fill="black" />
-                     {/* Tears for sad could go here, but keeping it simple sketch */}
                 </>
             );
-        case 'surprised': // Wide circles
+        case 'surprised': // Wide circles with gleam
             return (
                 <>
                     <circle cx="70" cy="90" r="8" fill="none" stroke="black" strokeWidth="2" />
                     <circle cx="130" cy="90" r="8" fill="none" stroke="black" strokeWidth="2" />
-                    <circle cx="70" cy="90" r="2" fill="black" />
-                    <circle cx="130" cy="90" r="2" fill="black" />
+                    <circle cx="70" cy="90" r="3" fill="black" />
+                    <circle cx="130" cy="90" r="3" fill="black" />
+                    <circle cx="72" cy="88" r="1.5" fill="white" />
+                    <circle cx="132" cy="88" r="1.5" fill="white" />
                 </>
             );
-        case 'angry': // Angled brows included in brows function usually, but eyes slightly squinted
+        case 'angry': // eyes slightly squinted
             return (
                 <>
                     <path d="M60,90 L80,90" stroke="black" strokeWidth="3" fill="none" />
                     <path d="M120,90 L140,90" stroke="black" strokeWidth="3" fill="none" />
                 </>
             );
-        case 'shy': // Looking sideways
+        case 'shy': 
         case 'neutral':
-        default:
-             // Simple Dots
+        default: // Default eyes with gleam
             return (
                 <>
                     <circle cx="70" cy="90" r="6" fill="black" />
                     <circle cx="130" cy="90" r="6" fill="black" />
+                    <circle cx="72" cy="88" r="1.5" fill="white" />
+                    <circle cx="132" cy="88" r="1.5" fill="white" />
                 </>
             );
     }
@@ -159,27 +181,34 @@ const Avatar: React.FC<AvatarProps> = ({ emotion, isSpeaking }) => {
       }
       return null;
   }
-
+  
   return (
-    <div className="w-full h-full flex items-center justify-center animate-float">
+    <div className="w-full h-full flex items-center justify-center">
       <svg 
         viewBox="0 0 200 240" 
         className="w-full h-full max-h-[500px]"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Background Aura (optional) */}
+        {/* Background Aura */}
         <circle cx="100" cy="100" r="90" fill="#FDFD96" opacity="0.3" />
 
-        {/* Body - Trapezoid-ish */}
-        <path 
-            d="M60,180 L40,240 L160,240 L140,180 Z" 
-            fill="#A7C7E7" 
-            stroke="black" 
-            strokeWidth="4" 
-            strokeLinejoin="round"
-        />
+        {/* Body - T-shirt shape with breathing animation */}
+        <g className="animate-breathe">
+            <path 
+                d="M70,175 C 60,185 50,210 70,240 L 130,240 C 150,210 140,185 130,175 Z" 
+                fill="#A7C7E7" 
+                stroke="black" 
+                strokeWidth="4" 
+                strokeLinejoin="round"
+            />
+            {/* Collar */}
+            <path d="M90,180 Q100,187 110,180" fill="none" stroke="black" strokeWidth="3" strokeLinecap="round"/>
+        </g>
         
-        {/* Head - Circle */}
+        {/* Shadow under head for depth */}
+        <ellipse cx="100" cy="180" rx="45" ry="10" fill="#2d2d2d" opacity="0.1" />
+        
+        {/* Head */}
         <circle 
             cx="100" 
             cy="100" 
@@ -188,30 +217,24 @@ const Avatar: React.FC<AvatarProps> = ({ emotion, isSpeaking }) => {
             stroke="black" 
             strokeWidth="4" 
         />
+          
+        {/* Parallax Group: Contains all facial features */}
+        <g transform={`translate(${offsets.x}, ${offsets.y})`}>
+          {/* Facial features */}
+          {getEyebrows(emotion)}
+          {getEyes(emotion)}
+          {getBlush(emotion)}
 
-        {/* Hair - Simple Tufts */}
-        <path 
-            d="M40,70 Q60,10 100,30 Q140,10 160,70" 
-            fill="none" 
-            stroke="black" 
-            strokeWidth="4" 
-            strokeLinecap="round"
-        />
-
-        {/* Features */}
-        {getEyebrows(emotion)}
-        {getEyes(emotion)}
-        {getBlush(emotion)}
-
-        {/* Mouth - Dynamic */}
-        <path 
-            d={getMouthPath(mouthShape, emotion)} 
-            fill={mouthShape === 'closed' ? 'none' : '#FFB7B2'} 
-            stroke="black" 
-            strokeWidth="3" 
-            strokeLinecap="round" 
-            strokeLinejoin="round"
-        />
+          {/* Mouth */}
+          <path 
+              d={getMouthPath(mouthShape, emotion)} 
+              fill={mouthShape === 'closed' ? 'none' : '#FFB7B2'} 
+              stroke="black" 
+              strokeWidth="3" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+          />
+        </g>
         
       </svg>
     </div>
