@@ -99,6 +99,11 @@ const AppContent = () => {
     setIsCreatorOpen(false);
   };
 
+  const handleRestoreDefaultAvatar = () => {
+    localStorage.removeItem('customAvatar');
+    setCustomAvatarConfig(null);
+  };
+
   return React.createElement(
     React.Fragment,
     null,
@@ -122,6 +127,12 @@ const AppContent = () => {
           "button",
           { onClick: () => setIsCreatorOpen(true), className: "px-3 py-1 bg-white border-2 border-black rounded-full shadow-[2px_2px_0px_black] text-sm font-bold hover:bg-pastel-pink transition-colors" },
           t('create_avatar')
+        ),
+        /* Restore Default Button - conditional rendering */
+        customAvatarConfig && React.createElement(
+            "button",
+            { onClick: handleRestoreDefaultAvatar, className: "px-3 py-1 bg-white border-2 border-black rounded-full shadow-[2px_2px_0px_black] text-sm font-bold hover:bg-pastel-blue transition-colors" },
+            t('restore_default')
         )
       ),
 

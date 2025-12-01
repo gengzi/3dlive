@@ -6,5 +6,6 @@
   "speaking": "正在讲话...",
   "english": "English",
   "chinese": "中文",
-  "create_avatar": "创建形象"
+  "create_avatar": "创建形象",
+  "restore_default": "还原默认"
 }
