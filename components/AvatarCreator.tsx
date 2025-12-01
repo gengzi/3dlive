@@ -90,17 +90,20 @@ const DraggableFeature: FC<DraggableFeatureProps> = ({ id, initialConfig, onUpda
        React.createElement(
         "div",
         {
-          onMouseDown: (e) => handleMouseDown(e, 'resize'),
-          style: {
-            position: 'absolute',
-            bottom: '0px',
-            right: '0px',
-            width: '15px',
-            height: '15px',
-            background: 'white',
-            border: '2px solid black',
-            cursor: 'nwse-resize'
-          }
+          // Cast props to any to avoid "Attributes" type error
+          ...({
+            onMouseDown: (e: MouseEvent<HTMLDivElement>) => handleMouseDown(e, 'resize'),
+            style: {
+              position: 'absolute',
+              bottom: '0px',
+              right: '0px',
+              width: '15px',
+              height: '15px',
+              background: 'white',
+              border: '2px solid black',
+              cursor: 'nwse-resize'
+            }
+          } as any)
         }
       )
   );
@@ -232,12 +235,22 @@ const AvatarCreator = ({ onSave, onClose }) => {
                 bgImage && !isProcessing && React.createElement(
                     React.Fragment,
                     null,
-                    React.createElement(DraggableFeature, { id: 'eyes', initialConfig: features.eyes, onUpdate: handleFeatureUpdate, parentRef: previewRef }, 
-                        React.createElement("div", { className: "w-full h-full flex items-center justify-center text-white font-bold text-xs bg-black bg-opacity-50" }, "EYES")
-                    ),
-                    React.createElement(DraggableFeature, { id: 'mouth', initialConfig: features.mouth, onUpdate: handleFeatureUpdate, parentRef: previewRef },
-                        React.createElement("div", { className: "w-full h-full flex items-center justify-center text-white font-bold text-xs bg-black bg-opacity-50" }, "MOUTH")
-                    )
+                    React.createElement(DraggableFeature, { 
+                        id: 'eyes', 
+                        initialConfig: features.eyes, 
+                        onUpdate: handleFeatureUpdate, 
+                        parentRef: previewRef,
+                        // Fix: pass children in props
+                        children: React.createElement("div", { className: "w-full h-full flex items-center justify-center text-white font-bold text-xs bg-black bg-opacity-50" }, "EYES")
+                    }),
+                    React.createElement(DraggableFeature, { 
+                        id: 'mouth', 
+                        initialConfig: features.mouth, 
+                        onUpdate: handleFeatureUpdate, 
+                        parentRef: previewRef,
+                        // Fix: pass children in props
+                        children: React.createElement("div", { className: "w-full h-full flex items-center justify-center text-white font-bold text-xs bg-black bg-opacity-50" }, "MOUTH")
+                    })
                 )
             )
         ),
