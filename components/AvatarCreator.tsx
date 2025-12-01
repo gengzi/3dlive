@@ -110,22 +110,68 @@ const DraggableFeature: FC<DraggableFeatureProps> = ({ id, initialConfig, onUpda
   );
 };
 
+// --- Image Compression Utility ---
+const resizeAndCompressImage = (file, maxWidth, maxHeight, quality) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width *= maxHeight / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          return reject(new Error('Failed to get canvas context'));
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = (error) => reject(error);
+    };
+    reader.onerror = (error) => reject(error);
+  });
+};
+
+
 const AvatarCreator = ({ onSave, onClose }) => {
   const [bgImage, setBgImage] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [features, setFeatures] = useState({
       eyes: { x: 25, y: 30, width: 50, height: 20 },
       mouth: { x: 35, y: 60, width: 30, height: 15 }
   });
   const previewRef = useRef<HTMLDivElement>(null);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setBgImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setIsProcessing(true);
+      try {
+        const compressedDataUrl = await resizeAndCompressImage(file, 512, 512, 0.8);
+        setBgImage(compressedDataUrl as string);
+      } catch (error) {
+        console.error("Failed to process image:", error);
+        alert("Could not process the selected image. Please try another one.");
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -135,7 +181,16 @@ const AvatarCreator = ({ onSave, onClose }) => {
 
   const handleSave = () => {
       if(bgImage) {
+        try {
           onSave({ image: bgImage, features: features });
+        } catch (e) {
+          if (e.name === 'QuotaExceededError') {
+            alert("Image is too large to save, even after compression. Please try a smaller or simpler image.");
+          } else {
+            console.error("Failed to save avatar:", e);
+            alert("An unexpected error occurred while saving the avatar.");
+          }
+        }
       }
   };
 
@@ -169,7 +224,8 @@ const AvatarCreator = ({ onSave, onClose }) => {
                 "div",
                 { className: "flex flex-col items-center justify-center space-y-4 p-4 border-2 border-dashed border-sketch-black rounded-lg" },
                 React.createElement("h3", { className: "font-bold" }, "1. Upload Image"),
-                React.createElement("input", { type: "file", accept: "image/*", onChange: handleImageUpload, className: "text-sm" }),
+                React.createElement("input", { type: "file", accept: "image/*", onChange: handleImageUpload, className: "text-sm", disabled: isProcessing }),
+                isProcessing && React.createElement("p", { className: "text-xs" }, "Processing image..."),
                 React.createElement("h3", { className: "font-bold mt-6" }, "2. Adjust Features"),
                 React.createElement("p", { className: "text-xs text-gray-600" }, "Drag to move, use the white handle to resize.")
             ),
@@ -177,9 +233,13 @@ const AvatarCreator = ({ onSave, onClose }) => {
             /* Preview */
             React.createElement(
                 "div",
-                { ref: previewRef, className: "w-full aspect-square bg-gray-200 border-2 border-black rounded-lg relative overflow-hidden" },
-                bgImage ? React.createElement("img", { src: bgImage, className: "w-full h-full object-contain" }) : React.createElement("div", { className: "flex items-center justify-center h-full text-gray-500" }, "Preview"),
-                bgImage && React.createElement(
+                { ref: previewRef, className: "w-full aspect-square bg-gray-200 border-2 border-black rounded-lg relative overflow-hidden flex items-center justify-center" },
+                isProcessing
+                  ? React.createElement("div", { className: "text-gray-500" }, "Compressing...")
+                  : bgImage 
+                    ? React.createElement("img", { src: bgImage, className: "w-full h-full object-contain" }) 
+                    : React.createElement("div", { className: "text-gray-500" }, "Preview"),
+                bgImage && !isProcessing && React.createElement(
                     React.Fragment,
                     null,
                     // FIX: Explicitly passing children to a properly typed FC component resolves the error.
@@ -199,7 +259,7 @@ const AvatarCreator = ({ onSave, onClose }) => {
             "button",
             { 
                 onClick: handleSave, 
-                disabled: !bgImage,
+                disabled: !bgImage || isProcessing,
                 className: "mt-6 px-6 py-3 bg-pastel-green border-2 border-black rounded-full shadow-[4px_4px_0px_black] font-bold text-lg hover:bg-green-400 transition-colors disabled:opacity-50 disabled:shadow-none" 
             }, "Save Avatar"
         )
