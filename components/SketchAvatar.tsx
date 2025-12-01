@@ -18,7 +18,7 @@ const useMousePosition = () => {
   return position;
 };
 
-// --- Facial Feature Drawing Functions (reused for both modes) ---
+// --- Facial Feature Drawing Functions ---
 
 const getMouthPath = (shape, emo, isSpeaking) => {
     if (shape === 'closed' && !isSpeaking) {
@@ -73,7 +73,51 @@ const Eyes = ({ emotion }) => {
     }
 };
 
-const DefaultAvatar = ({ emotion, isSpeaking, mouthShape, offsets }) => {
+const Arms = ({ emotion, isSpeaking, tick }) => {
+    // Left Arm Origin: 50, 180 (Approx shoulder)
+    // Right Arm Origin: 150, 180
+    
+    // Dynamic offsets for animation
+    const waveY = Math.sin(tick / 5) * 10;
+    const waveX = Math.cos(tick / 5) * 5;
+    const talkY = Math.abs(Math.sin(tick / 3)) * 10;
+    const talkX = Math.cos(tick / 4) * 10;
+
+    let leftPath, rightPath;
+
+    // --- State Machine for Arms ---
+    if (emotion === 'happy' || emotion === 'excited') {
+        // Hands up waving
+        leftPath = `M50,180 Q30,150 ${20 + waveX},${130 + waveY}`;
+        rightPath = `M150,180 Q170,150 ${180 - waveX},${130 - waveY}`;
+    } else if (emotion === 'angry') {
+        // Akimbo (Hands on hips)
+        leftPath = `M50,180 Q30,200 60,220`; 
+        rightPath = `M150,180 Q170,200 140,220`;
+    } else if (emotion === 'surprised') {
+        // Hands to face
+        leftPath = `M50,180 Q40,160 80,180`;
+        rightPath = `M150,180 Q160,160 120,180`;
+    } else if (isSpeaking) {
+        // Gesturing
+        leftPath = `M50,180 Q40,${200 + talkY} ${60 - talkX},${200 - talkY}`;
+        rightPath = `M150,180 Q160,${200 + talkY} ${140 + talkX},${200 - talkY}`;
+    } else {
+        // Neutral / Idle (Arms down)
+        leftPath = `M50,180 Q40,200 40,${220 + waveY/2}`;
+        rightPath = `M150,180 Q160,200 160,${220 + waveY/2}`;
+    }
+
+    return React.createElement(React.Fragment, null,
+        React.createElement("path", { d: leftPath, stroke: "black", strokeWidth: "6", fill: "none", strokeLinecap: "round" }),
+        React.createElement("circle", { cx: "50", cy: "180", r: "3", fill: "black" }), // Shoulder joint
+        
+        React.createElement("path", { d: rightPath, stroke: "black", strokeWidth: "6", fill: "none", strokeLinecap: "round" }),
+        React.createElement("circle", { cx: "150", cy: "180", r: "3", fill: "black" }) // Shoulder joint
+    );
+};
+
+const DefaultAvatar = ({ emotion, isSpeaking, mouthShape, offsets, tick }) => {
   // Original SVG drawing functions adapted for the default avatar
   const getOriginalEyes = (emo) => {
     switch (emo) {
@@ -114,14 +158,27 @@ const DefaultAvatar = ({ emotion, isSpeaking, mouthShape, offsets }) => {
     }
   };
   
-  return React.createElement("svg", { viewBox: "0 0 200 240", className: "w-full h-full pointer-events-none" }, /* pointer-events-none ensures drag works on the container */
+  return React.createElement("svg", { viewBox: "0 0 200 240", className: "w-full h-full pointer-events-none" },
+      /* Background Glow */
       React.createElement("circle", { cx: "100", cy: "100", r: "90", fill: "#FDFD96", opacity: "0.3" }),
+      
+      /* Body Group (breathes) */
       React.createElement("g", { className: "animate-breathe" },
+          /* Shirt */
           React.createElement("path", { d: "M70,175 C 60,185 50,210 70,240 L 130,240 C 150,210 140,185 130,175 Z", fill: "#A7C7E7", stroke: "black", strokeWidth: "4", strokeLinejoin: "round" }),
+          /* Arms (Attached to body layer, but we render them on top or behind?) Render on top for sketch style */
+          React.createElement(Arms, { emotion, isSpeaking, tick }), 
+          /* Collar Detail */
           React.createElement("path", { d: "M90,180 Q100,187 110,180", fill: "none", stroke: "black", strokeWidth: "3", strokeLinecap: "round" })
       ),
+      
+      /* Shadow */
       React.createElement("ellipse", { cx: "100", cy: "180", rx: "45", ry: "10", fill: "#2d2d2d", opacity: "0.1" }),
+      
+      /* Head */
       React.createElement("circle", { cx: "100", cy: "100", r: "80", fill: "white", stroke: "black", strokeWidth: "4" }),
+      
+      /* Face Features with Parallax */
       React.createElement("g", { transform: `translate(${offsets.x}, ${offsets.y})` },
           getOriginalEyes(emotion),
           React.createElement("path", { d: getOriginalMouthPath(mouthShape, emotion), fill: mouthShape === 'closed' ? 'none' : '#FFB7B2', stroke: "black", strokeWidth: "3", strokeLinecap: "round", strokeLinejoin: "round" })
@@ -130,8 +187,9 @@ const DefaultAvatar = ({ emotion, isSpeaking, mouthShape, offsets }) => {
 };
 
 const CustomAvatar = ({ config, emotion, isSpeaking, mouthShape, offsets }) => {
+    // Reverted to simple static image + vector features mode
     return React.createElement(
-        "div", { className: "w-full h-full relative pointer-events-none" }, /* pointer-events-none ensures drag works on the container */
+        "div", { className: "w-full h-full relative pointer-events-none" },
         React.createElement("img", { src: config.image, className: "w-full h-full object-contain" }),
         React.createElement(
             "div", { className: "absolute top-0 left-0 w-full h-full", style: { transform: `translate(${offsets.x}px, ${offsets.y}px)` } },
@@ -161,6 +219,18 @@ const SketchAvatar = ({ emotion, isSpeaking, customAvatarConfig, isDragging }) =
   const [mouthShape, setMouthShape] = useState('closed');
   const { x, y } = useMousePosition();
   const [offsets, setOffsets] = useState({ x: 0, y: 0 });
+  const [tick, setTick] = useState(0); // Tick for animation loops
+
+  // Animation Loop for dynamics
+  useEffect(() => {
+    let animationFrameId;
+    const animate = () => {
+      setTick(prev => prev + 1);
+      animationFrameId = requestAnimationFrame(animate);
+    };
+    animate();
+    return () => cancelAnimationFrame(animationFrameId);
+  }, []);
 
   // Parallax effect
   useEffect(() => {
@@ -197,7 +267,7 @@ const SketchAvatar = ({ emotion, isSpeaking, customAvatarConfig, isDragging }) =
     { className: "w-full h-full flex items-center justify-center select-none" }, // select-none to prevent highlighting
     customAvatarConfig 
         ? React.createElement(CustomAvatar, { config: customAvatarConfig, emotion, isSpeaking, mouthShape, offsets })
-        : React.createElement(DefaultAvatar, { emotion, isSpeaking, mouthShape, offsets })
+        : React.createElement(DefaultAvatar, { emotion, isSpeaking, mouthShape, offsets, tick })
   );
 };
 

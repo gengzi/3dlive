@@ -10,11 +10,9 @@ interface DraggableFeatureProps {
 }
 
 // A resizable and draggable component for facial features
-// FIX: Typed the component with FC<DraggableFeatureProps> to correctly handle props and children.
 const DraggableFeature: FC<DraggableFeatureProps> = ({ id, initialConfig, onUpdate, parentRef, children }) => {
   const [pos, setPos] = useState({ x: initialConfig.x, y: initialConfig.y });
   const [size, setSize] = useState({ w: initialConfig.width, h: initialConfig.height });
-  // FIX: Added startPosX and startPosY to the dragInfo ref to store initial drag positions.
   const dragInfo = useRef({ isDragging: false, isResizing: false, startX: 0, startY: 0, startW: 0, startH: 0, startPosX: 0, startPosY: 0 });
   const featureRef = useRef<HTMLDivElement>(null);
 
@@ -54,9 +52,7 @@ const DraggableFeature: FC<DraggableFeatureProps> = ({ id, initialConfig, onUpda
     
     if (dragInfo.current.isDragging) {
       setPos({
-        // FIX: Use dragInfo.current.startPosX to calculate new position based on the initial position.
         x: Math.max(0, Math.min(100 - size.w, dragInfo.current.startPosX + dx)),
-        // FIX: Use dragInfo.current.startPosY to calculate new position based on the initial position.
         y: Math.max(0, Math.min(100 - size.h, dragInfo.current.startPosY + dy)),
       });
     } else if (dragInfo.current.isResizing) {
@@ -152,11 +148,11 @@ const resizeAndCompressImage = (file, maxWidth, maxHeight, quality) => {
 
 const AvatarCreator = ({ onSave, onClose }) => {
   const [bgImage, setBgImage] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [features, setFeatures] = useState({
       eyes: { x: 25, y: 30, width: 50, height: 20 },
       mouth: { x: 35, y: 60, width: 30, height: 15 }
   });
+  const [isProcessing, setIsProcessing] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,7 +164,7 @@ const AvatarCreator = ({ onSave, onClose }) => {
         setBgImage(compressedDataUrl as string);
       } catch (error) {
         console.error("Failed to process image:", error);
-        alert("Could not process the selected image. Please try another one.");
+        alert("Could not process the selected image.");
       } finally {
         setIsProcessing(false);
       }
@@ -180,16 +176,16 @@ const AvatarCreator = ({ onSave, onClose }) => {
   };
 
   const handleSave = () => {
-      if(bgImage) {
-        try {
-          onSave({ image: bgImage, features: features });
-        } catch (e) {
-          if (e.name === 'QuotaExceededError') {
-            alert("Image is too large to save, even after compression. Please try a smaller or simpler image.");
-          } else {
-            console.error("Failed to save avatar:", e);
-            alert("An unexpected error occurred while saving the avatar.");
-          }
+      try {
+        if (!bgImage) return;
+        const config = { mode: 'sketch', image: bgImage, features: features };
+        onSave(config);
+      } catch (e) {
+        if (e.name === 'QuotaExceededError') {
+          alert("Image is too large to save. Try a simpler image.");
+        } else {
+          console.error(e);
+          alert("Error saving avatar.");
         }
       }
   };
@@ -202,7 +198,8 @@ const AvatarCreator = ({ onSave, onClose }) => {
     },
     React.createElement(
         "div",
-        { className: "bg-pastel-bg border-4 border-black rounded-lg shadow-lg p-6 w-full max-w-2xl text-center relative" },
+        { className: "bg-pastel-bg border-4 border-black rounded-lg shadow-lg p-6 w-full max-w-3xl text-center relative max-h-[90vh] overflow-y-auto" },
+        
         /* Close button */
         React.createElement(
             "button",
@@ -212,41 +209,32 @@ const AvatarCreator = ({ onSave, onClose }) => {
             )
         ),
 
-        React.createElement("h2", { className: "text-2xl font-bold mb-4" }, "Create Your Avatar"),
-        React.createElement("p", { className: "mb-4 text-sm" }, "Upload a sketch image, then position and resize the features."),
+        React.createElement("h2", { className: "text-2xl font-bold mb-4" }, "Create Custom Avatar"),
+        React.createElement("p", { className: "mb-6 text-gray-600" }, "Upload any image and place the eyes and mouth!"),
 
-        /* Main Content Area */
         React.createElement(
             "div",
             { className: "grid grid-cols-1 md:grid-cols-2 gap-6" },
-            /* Controls */
             React.createElement(
                 "div",
-                { className: "flex flex-col items-center justify-center space-y-4 p-4 border-2 border-dashed border-sketch-black rounded-lg" },
-                React.createElement("h3", { className: "font-bold" }, "1. Upload Image"),
+                { className: "flex flex-col items-center space-y-4 p-4 border-2 border-dashed border-sketch-black rounded-lg" },
+                React.createElement("h3", { className: "font-bold" }, "1. Upload Sketch"),
                 React.createElement("input", { type: "file", accept: "image/*", onChange: handleImageUpload, className: "text-sm", disabled: isProcessing }),
-                isProcessing && React.createElement("p", { className: "text-xs" }, "Processing image..."),
-                React.createElement("h3", { className: "font-bold mt-6" }, "2. Adjust Features"),
-                React.createElement("p", { className: "text-xs text-gray-600" }, "Drag to move, use the white handle to resize.")
+                React.createElement("p", { className: "text-xs text-gray-500" }, "Upload a drawing, an object, or a photo."),
+                isProcessing && React.createElement("p", { className: "text-xs animate-pulse" }, "Processing...")
             ),
-
-            /* Preview */
             React.createElement(
                 "div",
                 { ref: previewRef, className: "w-full aspect-square bg-gray-200 border-2 border-black rounded-lg relative overflow-hidden flex items-center justify-center" },
-                isProcessing
-                  ? React.createElement("div", { className: "text-gray-500" }, "Compressing...")
-                  : bgImage 
+                bgImage 
                     ? React.createElement("img", { src: bgImage, className: "w-full h-full object-contain" }) 
-                    : React.createElement("div", { className: "text-gray-500" }, "Preview"),
+                    : React.createElement("div", { className: "text-gray-500" }, "Preview Area"),
                 bgImage && !isProcessing && React.createElement(
                     React.Fragment,
                     null,
-                    // FIX: Explicitly passing children to a properly typed FC component resolves the error.
                     React.createElement(DraggableFeature, { id: 'eyes', initialConfig: features.eyes, onUpdate: handleFeatureUpdate, parentRef: previewRef }, 
                         React.createElement("div", { className: "w-full h-full flex items-center justify-center text-white font-bold text-xs bg-black bg-opacity-50" }, "EYES")
                     ),
-                    // FIX: Explicitly passing children to a properly typed FC component resolves the error.
                     React.createElement(DraggableFeature, { id: 'mouth', initialConfig: features.mouth, onUpdate: handleFeatureUpdate, parentRef: previewRef },
                         React.createElement("div", { className: "w-full h-full flex items-center justify-center text-white font-bold text-xs bg-black bg-opacity-50" }, "MOUTH")
                     )
@@ -259,7 +247,7 @@ const AvatarCreator = ({ onSave, onClose }) => {
             "button",
             { 
                 onClick: handleSave, 
-                disabled: !bgImage || isProcessing,
+                disabled: isProcessing || !bgImage,
                 className: "mt-6 px-6 py-3 bg-pastel-green border-2 border-black rounded-full shadow-[4px_4px_0px_black] font-bold text-lg hover:bg-green-400 transition-colors disabled:opacity-50 disabled:shadow-none" 
             }, "Save Avatar"
         )
