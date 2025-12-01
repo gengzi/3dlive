@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SketchAvatar from './components/SketchAvatar';
 import ChatInterface from './components/ChatInterface';
 import AvatarCreator from './components/AvatarCreator';
+import DraggableWrapper from './components/DraggableWrapper'; // Import DraggableWrapper
 import { useSpeech } from './hooks/useSpeech';
 import { sendMessageToGemini } from './services/geminiService';
 import { INITIAL_EMOTION } from './constants';
@@ -23,6 +24,7 @@ const AppContent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
   const [customAvatarConfig, setCustomAvatarConfig] = useState(null);
+  const [isAvatarDragging, setIsAvatarDragging] = useState(false); // State to track dragging
 
   // Load custom avatar from localStorage on initial load
   useEffect(() => {
@@ -136,30 +138,44 @@ const AppContent = () => {
         )
       ),
 
-      /* Main Content Area */
+      /* Main Content Area - Layout changed to support draggable absolute positioning */
       React.createElement(
         "div",
-        { className: "flex-1 relative flex items-center justify-center pt-10 pb-40 lg:pb-20" },
+        { className: "flex-1 relative flex items-center justify-center pt-10 pb-40 lg:pb-20 overflow-hidden" }, // Kept flex for initial center visual, but DraggableWrapper works with transforms.
+        
         React.createElement(
-          "div",
-          { className: "w-64 h-64 md:w-96 md:h-96 relative" },
-          isSpeaking && React.createElement(
-              "div", { className: "absolute -top-10 right-0 bg-white border-2 border-black px-3 py-1 rounded-full animate-bounce shadow-[2px_2px_0px_black]" },
-              React.createElement("span", { className: "text-xs font-bold" }, t("speaking"))
-          ),
-          isListening && React.createElement(
-              "div", { className: "absolute -top-10 left-0 bg-pastel-pink border-2 border-black px-3 py-1 rounded-full animate-pulse shadow-[2px_2px_0px_black]" },
-              React.createElement("span", { className: "text-xs font-bold" }, t("listening"))
-          ),
-          React.createElement(SketchAvatar, { emotion: currentEmotion, isSpeaking: isSpeaking, customAvatarConfig: customAvatarConfig })
+          DraggableWrapper,
+          { onDragStateChange: setIsAvatarDragging },
+          React.createElement(
+            "div",
+            { className: "w-64 h-64 md:w-96 md:h-96 relative" },
+            isSpeaking && React.createElement(
+                "div", { className: "absolute -top-10 right-0 bg-white border-2 border-black px-3 py-1 rounded-full animate-bounce shadow-[2px_2px_0px_black]" },
+                React.createElement("span", { className: "text-xs font-bold" }, t("speaking"))
+            ),
+            isListening && React.createElement(
+                "div", { className: "absolute -top-10 left-0 bg-pastel-pink border-2 border-black px-3 py-1 rounded-full animate-pulse shadow-[2px_2px_0px_black]" },
+                React.createElement("span", { className: "text-xs font-bold" }, t("listening"))
+            ),
+            React.createElement(SketchAvatar, { 
+                emotion: currentEmotion, 
+                isSpeaking: isSpeaking, 
+                customAvatarConfig: customAvatarConfig,
+                isDragging: isAvatarDragging // Pass dragging state to Avatar
+            })
+          )
         )
       ),
 
       /* Bottom Chat Interface */
       React.createElement(
         "div",
-        { className: "absolute bottom-0 w-full z-20 bg-gradient-to-t from-pastel-bg via-pastel-bg to-transparent pt-10" },
-        React.createElement(ChatInterface, { messages: messages, transcript: transcript, isListening: isListening, isLoading: isLoading, onSendMessage: handleSendMessage, onToggleListening: handleToggleListening })
+        { className: "absolute bottom-0 w-full z-20 bg-gradient-to-t from-pastel-bg via-pastel-bg to-transparent pt-10 pointer-events-none" }, // pointer-events-none on container to let clicks pass through to avatar if needed, but children need pointer-events-auto
+        React.createElement(
+            "div", 
+            { className: "pointer-events-auto" }, // Re-enable pointer events for the chat interface itself
+            React.createElement(ChatInterface, { messages: messages, transcript: transcript, isListening: isListening, isLoading: isLoading, onSendMessage: handleSendMessage, onToggleListening: handleToggleListening })
+        )
       )
     ),
     /* Avatar Creator Modal */

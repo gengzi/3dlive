@@ -114,7 +114,7 @@ const DefaultAvatar = ({ emotion, isSpeaking, mouthShape, offsets }) => {
     }
   };
   
-  return React.createElement("svg", { viewBox: "0 0 200 240", className: "w-full h-full" },
+  return React.createElement("svg", { viewBox: "0 0 200 240", className: "w-full h-full pointer-events-none" }, /* pointer-events-none ensures drag works on the container */
       React.createElement("circle", { cx: "100", cy: "100", r: "90", fill: "#FDFD96", opacity: "0.3" }),
       React.createElement("g", { className: "animate-breathe" },
           React.createElement("path", { d: "M70,175 C 60,185 50,210 70,240 L 130,240 C 150,210 140,185 130,175 Z", fill: "#A7C7E7", stroke: "black", strokeWidth: "4", strokeLinejoin: "round" }),
@@ -131,7 +131,7 @@ const DefaultAvatar = ({ emotion, isSpeaking, mouthShape, offsets }) => {
 
 const CustomAvatar = ({ config, emotion, isSpeaking, mouthShape, offsets }) => {
     return React.createElement(
-        "div", { className: "w-full h-full relative" },
+        "div", { className: "w-full h-full relative pointer-events-none" }, /* pointer-events-none ensures drag works on the container */
         React.createElement("img", { src: config.image, className: "w-full h-full object-contain" }),
         React.createElement(
             "div", { className: "absolute top-0 left-0 w-full h-full", style: { transform: `translate(${offsets.x}px, ${offsets.y}px)` } },
@@ -157,20 +157,26 @@ const CustomAvatar = ({ config, emotion, isSpeaking, mouthShape, offsets }) => {
     );
 };
 
-const SketchAvatar = ({ emotion, isSpeaking, customAvatarConfig }) => {
+const SketchAvatar = ({ emotion, isSpeaking, customAvatarConfig, isDragging }) => {
   const [mouthShape, setMouthShape] = useState('closed');
   const { x, y } = useMousePosition();
   const [offsets, setOffsets] = useState({ x: 0, y: 0 });
 
   // Parallax effect
   useEffect(() => {
+    // If dragging, we can freeze the eyes or center them to avoid disorienting effect
+    if (isDragging) {
+        setOffsets({ x: 0, y: 0 });
+        return;
+    }
+
     const screenCenterX = window.innerWidth / 2;
     const screenCenterY = window.innerHeight / 2;
     const maxOffset = 8;
     const offsetX = Math.max(-maxOffset, Math.min(maxOffset, (x - screenCenterX) / 60));
     const offsetY = Math.max(-maxOffset, Math.min(maxOffset, (y - screenCenterY) / 60));
     setOffsets({ x: -offsetX, y: -offsetY });
-  }, [x, y]);
+  }, [x, y, isDragging]);
 
   // Lip sync simulation
   useEffect(() => {
@@ -188,7 +194,7 @@ const SketchAvatar = ({ emotion, isSpeaking, customAvatarConfig }) => {
   
   return React.createElement(
     "div",
-    { className: "w-full h-full flex items-center justify-center" },
+    { className: "w-full h-full flex items-center justify-center select-none" }, // select-none to prevent highlighting
     customAvatarConfig 
         ? React.createElement(CustomAvatar, { config: customAvatarConfig, emotion, isSpeaking, mouthShape, offsets })
         : React.createElement(DefaultAvatar, { emotion, isSpeaking, mouthShape, offsets })
